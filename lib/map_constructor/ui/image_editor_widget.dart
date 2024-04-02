@@ -3,31 +3,41 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map_dragmarker/flutter_map_dragmarker.dart';
+
+import 'package:geojson_test/map_constructor/data/editor/image_editor.dart';
 
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:image_picker/image_picker.dart';
 
-class ImageEditor extends StatefulWidget {
-  const ImageEditor({super.key});
+class ImageEditorWidget extends StatefulWidget {
+  const ImageEditorWidget({super.key});
 
   @override
-  State<ImageEditor> createState() => _ImageEditorState();
+  State<ImageEditorWidget> createState() => _ImageEditorWidgetState();
 }
 
-class _ImageEditorState extends State<ImageEditor> {
+class _ImageEditorWidgetState extends State<ImageEditorWidget> {
   late MapController controller;
   LatLng? controllerCenter;
+
+  late ImageEditor imageEditor;
   
   File? pickedImage;
   Uint8List? webImage;
 
+  bool imageSelected = false;
+
+  RotatedOverlayImage? rotatedOverlayImage;
+
+  List<LatLng> imagePoints = [];
+
   @override
   void initState() {
-    super.initState();
-
     controller = MapController();
+    super.initState();
   }
 
   Future<void> _pickImage() async {
@@ -80,19 +90,19 @@ class _ImageEditorState extends State<ImageEditor> {
             maxZoom: 35,
             urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           ),
-          webImage != null ? OverlayImageLayer(
-            overlayImages: [
-              OverlayImage(
-                imageProvider: MemoryImage(webImage!),
-                bounds: LatLngBounds(
-                  controllerCenter!,
-                  LatLng(controllerCenter!.latitude + 0.001, controllerCenter!.longitude + 0.002)
-                ),
-                opacity: 0.75,
-                gaplessPlayback: true,
-              )
-            ],
-          ) : const SizedBox()
+          (webImage != null && rotatedOverlayImage != null && imageSelected) ? DragMarkers(markers: imageEditor.edit()) : SizedBox(),
+          (webImage != null && rotatedOverlayImage != null) ? GestureDetector(
+            onDoubleTap: () {
+              setState(() {
+                imageSelected = !imageSelected;
+              });
+            },
+            child: OverlayImageLayer(
+              overlayImages: [
+                rotatedOverlayImage!
+              ],
+            ),
+          ) : const SizedBox(height: 10, width: 10),
         ],
       ),
       floatingActionButton: Column(
@@ -111,10 +121,42 @@ class _ImageEditorState extends State<ImageEditor> {
           ),
           FloatingActionButton(
             child: const Icon(Icons.image_search),
-            onPressed: () {
-              _pickImage();
+            onPressed: () async {
+              await _pickImage();
+
               controllerCenter = controller.camera.center;
-            },
+
+              setState(() {
+                imagePoints = [
+                  controllerCenter!,
+                  LatLng(controllerCenter!.latitude, controllerCenter!.longitude + 0.002),
+                  LatLng(controllerCenter!.latitude + 0.002, controllerCenter!.longitude + 0.002)
+                ];
+
+                rotatedOverlayImage = RotatedOverlayImage(
+                  imageProvider: MemoryImage(webImage!),
+                  opacity: 0.75,
+                  topLeftCorner: imagePoints[0],
+                  bottomLeftCorner: imagePoints[1],
+                  bottomRightCorner: imagePoints[2],
+                );
+              });
+
+              imageEditor = ImageEditor(
+                points: imagePoints,
+                callbackRefresh: () => {
+                  setState(() {
+                    rotatedOverlayImage = RotatedOverlayImage(
+                      imageProvider: MemoryImage(webImage!),
+                      opacity: 0.75,
+                      topLeftCorner: imagePoints[0],
+                      bottomLeftCorner: imagePoints[1],
+                      bottomRightCorner: imagePoints[2],
+                    );
+                  })
+                }
+              );
+            }
           ),
         ],
       )
