@@ -24,6 +24,8 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
   LatLng? controllerCenter;
 
   late ImageEditor imageEditor;
+
+  double opacity = 0.75;
   
   File? pickedImage;
   Uint8List? webImage;
@@ -107,18 +109,42 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
       ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          webImage != null ? RotatedBox(
+            quarterTurns: 3,
+            child: SizedBox(
+              width: 200,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Slider(
+                    min: 0.01,
+                    max: 0.99,
+                    value: opacity,
+                    onChanged: (double value) {
+                      setState(() {
+                        opacity = value;
+                      });
+                      imageEditor.callbackRefresh!();
+                    }
+                  )
+                ],
+              ),
+            ),
+          ): const SizedBox(),
+          const SizedBox(height: 20),
           webImage != null ? FloatingActionButton(
             child: const Icon(Icons.image_not_supported_outlined),
             onPressed: () {
               setState(() {
                 webImage = null;
+                opacity = 0.75;
               });
             },
           ) : const SizedBox(),
-          const SizedBox(
-            height: 20,
-          ),
+          const SizedBox(height: 20),
           FloatingActionButton(
             child: const Icon(Icons.image_search),
             onPressed: () async {
@@ -135,7 +161,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
 
                 rotatedOverlayImage = RotatedOverlayImage(
                   imageProvider: MemoryImage(webImage!),
-                  opacity: 0.75,
+                  opacity: opacity,
                   topLeftCorner: imagePoints[0],
                   bottomLeftCorner: imagePoints[1],
                   bottomRightCorner: imagePoints[2],
@@ -148,7 +174,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
                   setState(() {
                     rotatedOverlayImage = RotatedOverlayImage(
                       imageProvider: MemoryImage(webImage!),
-                      opacity: 0.75,
+                      opacity: opacity,
                       topLeftCorner: imagePoints[0],
                       bottomLeftCorner: imagePoints[1],
                       bottomRightCorner: imagePoints[2],
