@@ -141,6 +141,7 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
               setState(() {
                 webImage = null;
                 opacity = 0.75;
+                imageSelected = false;
               });
             },
           ) : const SizedBox(),
@@ -154,9 +155,9 @@ class _ImageEditorWidgetState extends State<ImageEditorWidget> {
 
               setState(() {
                 imagePoints = [
-                  controllerCenter!,
-                  LatLng(controllerCenter!.latitude, controllerCenter!.longitude + 0.002),
-                  LatLng(controllerCenter!.latitude + 0.002, controllerCenter!.longitude + 0.002)
+                  LatLng(controllerCenter!.latitude + 0.002, controllerCenter!.longitude),
+                  LatLng(controllerCenter!.latitude, controllerCenter!.longitude),
+                  LatLng(controllerCenter!.latitude, controllerCenter!.longitude + 0.004),
                 ];
 
                 rotatedOverlayImage = RotatedOverlayImage(
